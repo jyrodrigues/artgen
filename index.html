@@ -11,39 +11,11 @@
       const app = Elm.Main.fullscreen();
       const port = 6743;
 
-      app.ports.raiseLowerPen.subscribe( () => {
-        http('PUT', api(port, '/print'), "")
-          .then(console.log)
-          .catch(console.error);
-      });
-
-      app.ports.disableMotor.subscribe( () => {
-        http('DELETE', api(port, '/print'), "")
-          .then(console.log)
-          .catch(console.error);
-      });
-
-      app.ports.print.subscribe( () => {
-        const node = document.getElementById('frame');
-        const payload = { svg: node.outerHTML };
-        console.log(payload);
-        http('POST', api(port, '/print'), payload)
-          .then(console.log)
-          .catch(console.error);
-      });
-
       app.ports.download.subscribe( name => {
         const node = document.getElementById('frame');
         const routeName = name.split(' ')[0];
         saveSvg(node, `${routeName}.svg`);
       });
-
-      // Get plotter status every 30 seconds
-      // window.setInterval( () => {
-      //   http('GET', api(port, '/print'))
-      //     .then(app.ports.getPlotterStatus.send)
-      //     .catch(console.error);
-      // }, 1000);
 
       // Return the full API url
       function api (port, endpoint) {
