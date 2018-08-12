@@ -14,6 +14,7 @@ import Example.HilbertCurve as HilbertCurve
 import Example.Landscape as Landscape
 import Example.ParallelRandom as ParallelRandom
 import Example.Rectangles as Rectangles
+import Example.Rectangles2 as Rectangles2
 import Example.Sun as Sun
 import Generative exposing (..)
 import Html
@@ -64,6 +65,7 @@ type Route
     | Sun (Maybe Sun.Model)
     | Chords (Maybe Chords.Model)
     | Rectangles (Maybe Rectangles.Model)
+    | Rectangles2 (Maybe Rectangles2.Model)
     | HilbertCurve (Maybe HilbertCurve.Model)
 
 
@@ -85,6 +87,7 @@ type Msg
     | SunMsg Sun.Msg
     | ChordsMsg Chords.Msg
     | RectanglesMsg Rectangles.Msg
+    | Rectangles2Msg Rectangles2.Msg
     | HilbertCurveMsg HilbertCurve.Msg
 
 
@@ -125,6 +128,10 @@ init location =
                     Rectangles.init
                         |> mapTuple2 (Rectangles << Just) (Cmd.map RectanglesMsg)
 
+                Rectangles2 _ ->
+                    Rectangles2.init
+                        |> mapTuple2 (Rectangles2 << Just) (Cmd.map Rectangles2Msg)
+
                 HilbertCurve _ ->
                     HilbertCurve.init
                         |> mapTuple2 (HilbertCurve << Just) (Cmd.map HilbertCurveMsg)
@@ -157,6 +164,7 @@ view model =
             , a [ href "#chords" ] [ text "Chords" ]
             , p [] [ text "L-Systems" ]
             , a [ href "#rectangles" ] [ text "Rectangles" ]
+            , a [ href "#rectangles2" ] [ text "Rectangles2" ]
             , a [ href "#hilbert-curve" ] [ text "Hilbert Curve" ]
             ]
         , article
@@ -226,6 +234,10 @@ render route =
         Rectangles (Just pageModel) ->
             Rectangles.view pageModel
                 |> Html.map RectanglesMsg
+
+        Rectangles2 (Just pageModel) ->
+            Rectangles2.view pageModel
+                |> Html.map Rectangles2Msg
 
         HilbertCurve (Just pageModel) ->
             HilbertCurve.view pageModel
@@ -298,6 +310,10 @@ update msg model =
                             Rectangles.update pageMsg pageModel
                                 |> mapTuple2 (Rectangles << Just) (Cmd.map RectanglesMsg)
 
+                        ( Rectangles2Msg pageMsg, Rectangles2 (Just pageModel) ) ->
+                            Rectangles2.update pageMsg pageModel
+                                |> mapTuple2 (Rectangles2 << Just) (Cmd.map Rectangles2Msg)
+
                         ( HilbertCurveMsg pageMsg, HilbertCurve (Just pageModel) ) ->
                             HilbertCurve.update pageMsg pageModel
                                 |> mapTuple2 (HilbertCurve << Just) (Cmd.map HilbertCurveMsg)
@@ -364,6 +380,7 @@ matchers =
         , UrlParser.map (Sun Nothing) (s "sun")
         , UrlParser.map (Chords Nothing) (s "chords")
         , UrlParser.map (Rectangles Nothing) (s "rectangles")
+        , UrlParser.map (Rectangles2 Nothing) (s "rectangles2")
         , UrlParser.map (HilbertCurve Nothing) (s "hilbert-curve")
         ]
 

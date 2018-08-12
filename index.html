@@ -39,11 +39,11 @@
       });
 
       // Get plotter status every 30 seconds
-      window.setInterval( () => {
-        http('GET', api(port, '/print'))
-          .then(app.ports.getPlotterStatus.send)
-          .catch(console.error);
-      }, 1000);
+      // window.setInterval( () => {
+      //   http('GET', api(port, '/print'))
+      //     .then(app.ports.getPlotterStatus.send)
+      //     .catch(console.error);
+      // }, 1000);
 
       // Return the full API url
       function api (port, endpoint) {

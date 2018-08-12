@@ -1,4 +1,4 @@
 #!/bin/sh
 
 elm-package install && \
-elm-live --port=2018 --open --pushstate --debug -- example/Main.elm --output index.js
+./node_modules/elm-live/bin/elm-live.js --port=2018 --open --pushstate --debug -- example/Main.elm --output index.js
