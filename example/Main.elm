@@ -24,7 +24,6 @@ import Html
         , text
         )
 import Html.Attributes exposing (class, href, id, style, type_)
-import Json.Decode exposing (decodeString, field, string)
 import Navigation exposing (Location)
 import Tuple exposing (first, mapFirst, mapSecond, second)
 import UrlParser
@@ -47,7 +46,6 @@ type Route
 
 type alias Model =
     { route : Route
-    , status : Maybe String
     }
 
 
@@ -70,7 +68,6 @@ init location =
                         |> mapTuple2 (Interactive << Just) (Cmd.map InteractiveMsg)
     in
     ( { route = first routeMsg
-      , status = Nothing
       }
     , second routeMsg
     )

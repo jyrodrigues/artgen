@@ -1,8 +1,8 @@
 module Example.Interactive exposing (..)
 
 import Draw exposing (..)
-import Html exposing (Html, text, div, button, h1)
-import Html.Events exposing (onClick)
+import Html exposing (Html, text, div, button, h1, h3, h4, span, ul, input)
+import Html.Events exposing (onClick, onInput)
 import LSystem
 import LSystem.Turtle exposing (State(..), turtle)
 import Svg exposing (Svg)
@@ -16,45 +16,33 @@ type alias Model =
     , r: Int
     , d: Int
     , s: Int
-    , depth: Int
+    , base: List State
+    , rbase: String
+    , history: List (List State)
+    , length: Int
     }
-
-initialState : List State
-initialState = [ D, R, D, L, D, L, D, D, L, D, D, L, D ]
--- initialState = [ D, R, D, R, D, R, D ]
-
-initialModel : Model
-initialModel =
-    Model initialState 0 0 0 0 3
-
-
-model : Model
-model = initialModel
-
-
 
 type Configuration
     = Configuration ( Float, Float ) Float
 
 
+
+initialState : List State
+initialState = [ D, R, D, L, D, L, D, D, L, D, D, L, D ]
+-- initialState = [ D, R, D, R, D, R, D ]
+
+initialModel : List State -> Model
+initialModel state =
+    Model state 0 0 0 0 [] "" [] (List.length initialState)
+
+model : Model
+model = initialModel initialState
+
 rule : Model -> State -> List State
 rule model state =
     case state of
         D ->
-            case model.d of
-                1 -> [ D, D, D, L, D, L, D, L, D, L, D ]
-                2 -> [ D, L, D, R ]
-                _ -> [ D ]
-            -- [ D, D, L, D, L, D, R, D, R, D, D, R, D, L ]
-            -- [ D, D, L, D, R, D ]
-            -- [ D, D, L, D, R, D, D ]
-            -- [ D, R, D, L, D, R, D, R, D, D, D ]
-            -- [ D, D, D, L, D, L, D, D, L, D, D, D, D ]
-            -- [ D, D, D, L, D, L, D, L, D, L, D ]
-            -- [ R, D, R, D, L, L, D, D, D ]
-            -- [ D, L, D, R ]
-            -- [ D, L ]
-            -- [ D ]
+            mapD model.d
 
         L ->
             -- [ L, D ]
@@ -72,15 +60,32 @@ rule model state =
         s ->
             [ s ]
 
+mapD : Int -> List State
+mapD i =
+    case i of
+        1 -> [ D, D, D, L, D, L, D, L, D, L, D ]
+        2 -> [ D, L, D, R ]
+        3 -> [ D, D, L, D, L, D, R, D, R, D, D, R, D, L ]
+        4 -> [ D, D, L, D, R, D ]
+        5 -> [ D, D, L, D, R, D, D ]
+        6 -> [ D, R, D, L, D, R, D, R, D, D, D ]
+        7 -> [ D, D, D, L, D, L, D, D, L, D, D, D, D ]
+        8 -> [ D, D, D, L, D, L, D, L, D, L, D ]
+        9 -> [ R, D, R, D, L, L, D, D, D ]
+        10 -> [ D, L, D, R ]
+        11 -> [ D, L ]
+        _ -> [ D ]
 
 type Msg
     = Iterate
     | ChooseDRule Int
     | Reset
+    | SetBase
+    | RegisterBase String
 
 init : ( Model, Cmd Msg )
 init =
-    ( initialModel, Cmd.none )
+    ( initialModel initialState, Cmd.none )
 
 draw : Model -> Configuration -> Svg Msg
 draw model (Configuration p0 a0) =
@@ -94,12 +99,20 @@ draw model (Configuration p0 a0) =
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [] [ text "H!" ]
-        , h1 [] [ text "H!" ]
-        , button [ onClick <| ChooseDRule 1 ] [ text "1.1" ]
-        , button [ onClick <| ChooseDRule 2 ] [ text "2.2" ]
-        , button [ onClick <| Iterate ] [ text "Iterate" ]
-        , button [ onClick <| Reset ] [ text "Reset" ]
+        [ h1 [] [ text "LSystem Interactive" ]
+        , h3 [] [ text <| toString model.length ]
+        , ul [] (List.map ruleButtonView (List.range 1 11))
+        , h3 [] [ text <| toString model.base ]
+        , ul []
+            [ button [ onClick <| Iterate ] [ text "Iterate" ]
+            , button [ onClick <| Reset ] [ text "Reset" ]
+            , button [ onClick <| SetBase ] [ text "Set Depth" ]
+            , input [ onInput RegisterBase ] []
+            ]
+        -- , ul []
+        --     [ button [ onClick <| Next ] [ text ">" ]
+        --     , button [ onClick <| Previous ] [ text "<" ]
+        --     ]
         , a4Landscape
             []
             [ g
@@ -109,13 +122,68 @@ view model =
         ]
 
 
+ruleButtonView : Int -> Html Msg
+ruleButtonView n =
+    div []
+        [ button [ onClick <| ChooseDRule n ] [ text <| toString n ]
+        , span [] [ text <| toString <| mapD n ]
+        ]
+    
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        Iterate ->
-            ( { model | state = LSystem.apply (rule model) model.state }, Cmd.none )
-        ChooseDRule newD ->
-            ( { model | d = newD }, Cmd.none )
-        Reset ->
-            ( initialModel, Cmd.none )
+    let
+        newState = LSystem.apply (rule model) model.state
+        resetModel = initialModel model.base
+    in
+        case msg of
+            Iterate ->
+                ( { model
+                | state = newState
+                , history = model.state :: model.history
+                , length = List.length newState
+                }, Cmd.none )
+            ChooseDRule newD ->
+                ( { model | d = newD }, Cmd.none )
+            Reset ->
+                ( { resetModel | base = model.base }, Cmd.none )
+            RegisterBase s ->
+                ( { model | rbase = s }, Cmd.none )
+            SetBase ->
+                ( { model | base = stringToState model.rbase }, Cmd.none )
+
+
+stringToState s =
+    let
+        charList = String.toList <| String.toUpper s
+    in
+        List.map charToState charList
+
+charToState c =
+    case c of
+        'D' -> D
+        'R' -> R
+        'L' -> L
+        'S' -> S
+        _ -> D
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  Sub.none
+
+
+
+{-| Program Entry.
+-}
+main : Program Never Model Msg
+main =
+    Html.program
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
