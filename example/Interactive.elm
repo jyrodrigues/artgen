@@ -3,11 +3,15 @@ module Example.Interactive exposing (..)
 import Draw exposing (..)
 import Html exposing (Html, text, div, button, h1, h3, h4, span, ul, input)
 import Html.Events exposing (onClick, onInput)
+import Html.Styled.Attributes exposing (css)
+import Css exposing (backgroundColor, rgba)
 import LSystem
 import LSystem.Turtle exposing (State(..), turtle)
 import Svg exposing (Svg)
 import Svg.Attributes exposing (transform)
 import Svg.PathD as PathD exposing (d_)
+import Keyboard
+import Char
 
 
 type alias Model =
@@ -20,6 +24,9 @@ type alias Model =
     , rbase: String
     , history: List (List State)
     , length: Int
+    , hk: List Char
+    , hc: List Keyboard.KeyCode
+    , recOn: Bool
     }
 
 type Configuration
@@ -33,7 +40,7 @@ initialState = [ D, R, D, L, D, L, D, D, L, D, D, L, D ]
 
 initialModel : List State -> Model
 initialModel state =
-    Model state 0 0 0 0 [] "" [] (List.length initialState)
+    Model state 0 0 0 0 state "" [] (List.length state) [] [] False
 
 model : Model
 model = initialModel initialState
@@ -82,6 +89,8 @@ type Msg
     | Reset
     | SetBase
     | RegisterBase String
+    | KeyDown Keyboard.KeyCode
+    | RecOnOff
 
 init : ( Model, Cmd Msg )
 init =
@@ -103,10 +112,13 @@ view model =
         , h3 [] [ text <| toString model.length ]
         , ul [] (List.map ruleButtonView (List.range 1 11))
         , h3 [] [ text <| toString model.base ]
+        , h3 [] [ text <| toString model.hk ]
+        , h3 [] [ text <| toString model.hc ]
         , ul []
-            [ button [ onClick <| Iterate ] [ text "Iterate" ]
+            [ button [ onClick <| RecOnOff ] [ text <| "Rec " ++ (if model.recOn then "On" else "Off") ]
+            , button [ onClick <| Iterate ] [ text "Iterate" ]
             , button [ onClick <| Reset ] [ text "Reset" ]
-            , button [ onClick <| SetBase ] [ text "Set Depth" ]
+            , button [ onClick <| SetBase ] [ text "Set Base" ]
             , input [ onInput RegisterBase ] []
             ]
         -- , ul []
@@ -151,6 +163,14 @@ update msg model =
                 ( { model | rbase = s }, Cmd.none )
             SetBase ->
                 ( { model | base = stringToState model.rbase }, Cmd.none )
+            KeyDown keycode ->
+                ( { model
+                    | hk = (Char.fromCode keycode) :: model.hk
+                    , hc = keycode :: model.hc
+                    }
+                , Cmd.none )
+            RecOnOff ->
+                { model | recOn = not model.recOn } ! []
 
 
 stringToState s =
@@ -173,8 +193,14 @@ charToState c =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-  Sub.none
+    Sub.batch <| subs model
 
+subs : Model -> List (Sub Msg)
+subs model =
+    if model.recOn then
+        [ Keyboard.downs KeyDown ]
+    else
+        []
 
 
 {-| Program Entry.
