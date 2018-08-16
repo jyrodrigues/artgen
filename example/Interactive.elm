@@ -24,6 +24,7 @@ type alias Model =
     , length: Int
     , recordedState: List State
     , recOn: Bool
+    , savedPatterns: List (List State)
     }
 
 type Configuration
@@ -37,7 +38,7 @@ initialState = [ D, R, D, L, D, L, D, D, L, D, D, L, D ]
 
 initialModel : List State -> Model
 initialModel state =
-    Model state [L] [R] [D] [S] state [state] (List.length state) [] False
+    Model state [L] [R] [D] [S] state [state] (List.length state) [] False []
 
 model : Model
 model = initialModel initialState
@@ -88,22 +89,25 @@ type Msg
     | SetRecordedAsStep
     | Iterate
     | ResetSvg
+    | SavePattern
+    | SelectPattern (List State)
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel initialState, Cmd.none )
 
-draw : Model -> Configuration -> Svg Msg
-draw model (Configuration p0 a0) =
+draw : List State -> Configuration -> Svg Msg
+draw pattern (Configuration p0 a0) =
     Svg.path
-        [ d_ <| [ PathD.M p0 ] ++ turtle model.state 90
+        [ d_ <| [ PathD.M p0 ] ++ turtle pattern 90
         , Svg.Attributes.strokeWidth "0.2"
         ]
         []
 
-db = [("width", "30%"), ("display", "inline-block")]
-dbw = style db
+w3 = [("width", "30%")]
+dib = [("display", "inline-block")]
+dbw = style (dib ++ w3)
 
 view : Model -> Html Msg
 view model =
@@ -118,26 +122,29 @@ view model =
             , ul [ dbw ]
                 [ button [ onClick <| RecOnOff ] [ text <| "Rec " ++ (if model.recOn then "On" else "Off") ]
                 , button [ onClick <| RecReset ] [ text "Reset recording" ]
+                , button [ onClick <| SavePattern ] [ text "Save pattern" ]
                 , button [ onClick <| SetRecordedAsBase ] [ text "Set base" ]
                 , button [ onClick <| SetRecordedAsStep ] [ text "Set step" ]
                 , button [ onClick <| ResetSvg ] [ text "Reset svg" ]
                 , button [ onClick <| Iterate ] [ text "Iterate" ]
                 ]
             , a6
-                [ style <| ("border", "1px solid black") :: db ]
+                [ style <| ("border", "1px solid black") :: dib ]
                 [ g
                     [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
-                    [ draw { model | state = model.recordedState } (Configuration ( 0, 0 ) 0) ]
+                    [ draw model.recordedState (Configuration ( 0, 0 ) 0) ]
                 ]
             ]
         , a4Landscape
-            [ style [("height", "500px")]]
+            [ style [("height", "700px"), ("width", "50%"), ("display", "inline-blick")]]
             [ g
                 [ transform <| Draw.translate 150 100 ++ Draw.scale 2 ]
-                [ draw model (Configuration ( 0, 0 ) 0) ]
+                [ draw model.state (Configuration ( 0, 0 ) 0) ]
             ]
+        , div
+            [ style <| dib ++ w3 ++ [ ("vertical-align", "top"), ("padding", "20px") ]]
+            (List.map viewSavedPattern model.savedPatterns)
         ]
-
 
 -- ruleButtonView : Int -> Html Msg
 -- ruleButtonView n =
@@ -145,7 +152,18 @@ view model =
 --         [ button [ onClick <| ChooseDRule n ] [ text <| toString n ]
 --         , span [] [ text <| toString <| mapD n ]
 --         ]
-    
+
+viewSavedPattern pattern =
+    div
+        []
+        [ a6
+            [ style <| [ ("border", "1px solid black"), ("margin", "10px") ] ++ dib ]
+            [ g
+                [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
+                [ draw pattern (Configuration (0, 0) 0) ]
+            ]
+        , button [ onClick <| SelectPattern pattern ] [ text <| "Select" ]
+        ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -174,6 +192,10 @@ update msg model =
                 )
             ResetSvg ->
                 ( { model | state = model.base }, Cmd.none )
+            SavePattern ->
+                { model | savedPatterns = model.recordedState :: model.savedPatterns } ! []
+            SelectPattern pattern ->
+                { model | recordedState = pattern } ! []
 
 stringToState s =
     let
