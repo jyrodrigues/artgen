@@ -33,28 +33,42 @@ type Configuration
 
 
 initialState : List State
-initialState = [ D, R, D, L, D, L, D, D, L, D, D, L, D ]
--- initialState = [ D, R, D, R, D, R, D ]
+initialState = [ D, R, D, R, D, R, D ]
+
+initialSavedPatterns =
+    [ [ D ]
+    , [ D, R, D, R, D, R, D ]
+    , [ D, R, D, L, D, L, D, R ]
+    , [ D, D, D, L, D, L, D, L, D, L, D ]
+    , [ D, L, D, R ]
+    , [ D, D, L, D, L, D, R, D, R, D, D, R, D, L ]
+    , [ D, D, L, D, R, D ]
+    , [ D, D, L, D, R, D, D ]
+    , [ D, R, D, L, D, R, D, R, D, D, D ]
+    , [ D, D, D, L, D, L, D, D, L, D, D, D, D ]
+    , [ D, D, D, L, D, L, D, L, D, L, D ]
+    , [ R, D, R, D, L, L, D, D, D ]
+    , [ D, L, D, R ]
+    , [ L, D, L, D, D, D, L, D ]
+    , [ R, D, R, D, D, D, R, D ]
+    , [ D, D, R, R, D, D, R ]
+    , [ D, D, R, R, D, D, R ]
+    ]
 
 initialModel : List State -> Model
 initialModel state =
-    Model state [L] [R] [D] [S] state [state] (List.length state) [] False []
+    Model state [L] [R] [D] [S] state [state] (List.length state) [] False initialSavedPatterns
 
 model : Model
 model = initialModel initialState
 
-rule : Model -> State -> List State
-rule model state =
+rule : List State -> State -> List State
+rule pattern state =
     case state of
         D ->
-            model.d
+            pattern
 
         L ->
-            -- [ L, D ]
-            -- [ L, D, L, D, D, D, L, D ]
-            -- [ R, D, R, D, D, D, R, D ]
-            -- [ D, D, R, R, D, D, R ]
-            -- [ D, D, R, R, D, D, R ]
             [ L ]
 
         R ->
@@ -65,29 +79,13 @@ rule model state =
         s ->
             [ s ]
 
--- mapD : Int -> List State
--- mapD i =
---     case i of
---         1 -> [ D, D, D, L, D, L, D, L, D, L, D ]
---         2 -> [ D, L, D, R ]
---         3 -> [ D, D, L, D, L, D, R, D, R, D, D, R, D, L ]
---         4 -> [ D, D, L, D, R, D ]
---         5 -> [ D, D, L, D, R, D, D ]
---         6 -> [ D, R, D, L, D, R, D, R, D, D, D ]
---         7 -> [ D, D, D, L, D, L, D, D, L, D, D, D, D ]
---         8 -> [ D, D, D, L, D, L, D, L, D, L, D ]
---         9 -> [ R, D, R, D, L, L, D, D, D ]
---         10 -> [ D, L, D, R ]
---         11 -> [ D, L ]
---         _ -> [ D ]
-
 type Msg
     = RecOnOff
     | RecReset
     | KeyDown Keyboard.KeyCode
-    | SetRecordedAsBase
-    | SetRecordedAsStep
-    | Iterate
+    | SetBase (List State)
+    | SetStep (List State)
+    | Iterate (List State)
     | ResetSvg
     | SavePattern
     | SelectPattern (List State)
@@ -123,10 +121,10 @@ view model =
                 [ button [ onClick <| RecOnOff ] [ text <| "Rec " ++ (if model.recOn then "On" else "Off") ]
                 , button [ onClick <| RecReset ] [ text "Reset recording" ]
                 , button [ onClick <| SavePattern ] [ text "Save pattern" ]
-                , button [ onClick <| SetRecordedAsBase ] [ text "Set base" ]
-                , button [ onClick <| SetRecordedAsStep ] [ text "Set step" ]
+                , button [ onClick <| SetBase model.recordedState ] [ text "Set base" ]
+                , button [ onClick <| SetStep model.recordedState ] [ text "Set step" ]
                 , button [ onClick <| ResetSvg ] [ text "Reset svg" ]
-                , button [ onClick <| Iterate ] [ text "Iterate" ]
+                , button [ onClick <| Iterate model.d ] [ text "Iterate" ]
                 ]
             , a6
                 [ style <| ("border", "1px solid black") :: dib ]
@@ -142,60 +140,53 @@ view model =
                 [ draw model.state (Configuration ( 0, 0 ) 0) ]
             ]
         , div
-            [ style <| dib ++ w3 ++ [ ("vertical-align", "top"), ("padding", "20px") ]]
+            [ style <| dib ++ [ ("width", "40%")] ++ [ ("vertical-align", "top"), ("padding", "20px") ]]
             (List.map viewSavedPattern model.savedPatterns)
         ]
 
--- ruleButtonView : Int -> Html Msg
--- ruleButtonView n =
---     div []
---         [ button [ onClick <| ChooseDRule n ] [ text <| toString n ]
---         , span [] [ text <| toString <| mapD n ]
---         ]
-
 viewSavedPattern pattern =
     div
-        []
+        [ style <| dib ++ [("border", "1px solid black"), ("margin", "4px")]]
         [ a6
-            [ style <| [ ("border", "1px solid black"), ("margin", "10px") ] ++ dib ]
+            [ style <| [ ("border", "1px dashed black"), ("margin", "10px") ] ++ dib ]
             [ g
                 [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
                 [ draw pattern (Configuration (0, 0) 0) ]
             ]
         , button [ onClick <| SelectPattern pattern ] [ text <| "Select" ]
+        , button [ onClick <| SetBase pattern ] [ text <| "Base" ]
+        , button [ onClick <| Iterate pattern ] [ text <| "Iterate" ]
         ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        newState = LSystem.apply (rule model) model.state
-    in
-        case msg of
-            RecOnOff ->
-                { model | recOn = not model.recOn } ! []
-            RecReset ->
-                { model | recordedState = [] } ! []
-            KeyDown keycode ->
-                { model | recordedState = updateRecordedState keycode model.recordedState } ! []
-            SetRecordedAsBase ->
-                { model | base = model.recordedState } ! []
-            SetRecordedAsStep ->
-                { model | d = model.recordedState } ! []
-            Iterate ->
-                ( { model
+    case msg of
+        RecOnOff ->
+            { model | recOn = not model.recOn } ! []
+        RecReset ->
+            { model | recordedState = [] } ! []
+        KeyDown keycode ->
+            { model | recordedState = updateRecordedState keycode model.recordedState } ! []
+        SetBase pattern ->
+            { model | base = pattern, state = pattern } ! []
+        SetStep pattern ->
+            { model | d = pattern } ! []
+        Iterate pattern ->
+            let
+                newState = LSystem.apply (rule pattern) model.state
+            in
+                { model
                     | state = newState
                     , history = model.state :: model.history
                     , length = List.length newState
-                    }
-                , Cmd.none
-                )
-            ResetSvg ->
-                ( { model | state = model.base }, Cmd.none )
-            SavePattern ->
-                { model | savedPatterns = model.recordedState :: model.savedPatterns } ! []
-            SelectPattern pattern ->
-                { model | recordedState = pattern } ! []
+                } ! []
+        ResetSvg ->
+            ( { model | state = model.base }, Cmd.none )
+        SavePattern ->
+            { model | savedPatterns = model.recordedState :: model.savedPatterns } ! []
+        SelectPattern pattern ->
+            { model | recordedState = pattern } ! []
 
 stringToState s =
     let
