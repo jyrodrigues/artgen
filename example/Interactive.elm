@@ -72,9 +72,7 @@ rule pattern state =
             [ L ]
 
         R ->
-            -- [ D, L ]
             [ R ]
-            -- [ D, D, D, D, D, D, D, R, R, D, D, R ]
 
         s ->
             [ s ]
@@ -103,21 +101,26 @@ draw pattern (Configuration p0 a0) =
         ]
         []
 
-w3 = [("width", "30%")]
 dib = [("display", "inline-block")]
-dbw = style (dib ++ w3)
+dbw = ("width", "30%") :: dib
 
 view : Model -> Html Msg
 view model =
     div []
-        [ h1 [style [("margin-top", "0")]] [ text "LSystem Interactive" ]
-        , div [ style [("display", "block"), ("padding", "10px"), ("border-bottom", "1px solid black")]]
-            [ div [ dbw ]
-                [ span [ style [("margin", "10px")]] [ text <| toString model.length ]
-                , span [ style [("margin", "10px")]] [ text <| toString model.base ]
+        [ div
+            [ style
+                [ ("display", "block")
+                , ("padding", "10px")
+                , ("border-bottom", "1px solid black")
+                ]
+            ]
+            [ div [ style dbw ]
+                [ h1 [ style [("margin-top", "0")] ] [ text "LSystem Interactive" ]
+                , span [ style [("margin", "10px")] ] [ text <| toString model.length ]
+                , span [ style [("margin", "10px")] ] [ text <| toString model.base ]
                 , p [] [ text <| toString model.recordedState ]
                 ]
-            , ul [ dbw ]
+            , ul [ style dbw ]
                 [ button [ onClick <| RecOnOff ] [ text <| "Rec " ++ (if model.recOn then "On" else "Off") ]
                 , button [ onClick <| RecReset ] [ text "Reset recording" ]
                 , button [ onClick <| SavePattern ] [ text "Save pattern" ]
@@ -133,29 +136,66 @@ view model =
                     [ draw model.recordedState (Configuration ( 0, 0 ) 0) ]
                 ]
             ]
-        , a4Landscape
-            [ style [("height", "700px"), ("width", "50%"), ("display", "inline-blick")]]
-            [ g
-                [ transform <| Draw.translate 150 100 ++ Draw.scale 2 ]
-                [ draw model.state (Configuration ( 0, 0 ) 0) ]
+        , div
+            [ style <|
+                [ ("height", "700px")
+                , ("width", "50%")
+                , ("display", "inline-block")
+                , ("overflow", "scroll")
+                ]
+            ]
+            [ a4Landscape
+                []
+                [ g
+                    [ transform <| Draw.translate 150 100 ++ Draw.scale 1 ]
+                    [ draw model.state (Configuration ( 0, 0 ) 0) ]
+                ]
             ]
         , div
-            [ style <| dib ++ [ ("width", "40%")] ++ [ ("vertical-align", "top"), ("padding", "20px") ]]
+            [ style <|
+                dib ++
+                [ ("width", "45%")
+                , ("vertical-align", "top")
+                , ("padding", "20px")
+                , ("height", "700px")
+                , ("overflow-y", "scroll")
+                ]
+            ]
             (List.map viewSavedPattern model.savedPatterns)
         ]
 
 viewSavedPattern pattern =
     div
-        [ style <| dib ++ [("border", "1px solid black"), ("margin", "4px")]]
+        [ style <|
+            dib ++
+            [ ("border", "1px solid black")
+            , ("margin", "4px")
+            ]
+        ]
         [ a6
-            [ style <| [ ("border", "1px dashed black"), ("margin", "10px") ] ++ dib ]
+            [ style <|
+                dib ++
+                [ ("border", "1px dashed black")
+                , ("margin", "10px")
+                ]
+            ]
             [ g
                 [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
                 [ draw pattern (Configuration (0, 0) 0) ]
             ]
-        , button [ onClick <| SelectPattern pattern ] [ text <| "Select" ]
-        , button [ onClick <| SetBase pattern ] [ text <| "Base" ]
-        , button [ onClick <| Iterate pattern ] [ text <| "Iterate" ]
+        , div
+            [ style
+                [ ("vertical-align", "top")
+                , ("padding", "20px")
+                , ("display", "inline-flex")
+                , ("flex-direction", "column")
+                , ("justify-content", "space-between")
+                ]
+            ]
+            [ button [ onClick <| SelectPattern pattern ] [ text <| "Select" ]
+            , button [ onClick <| SetBase pattern ] [ text <| "Base" ]
+            , button [ onClick <| Iterate pattern ] [ text <| "Iterate" ]
+            ]
         ]
 
 
