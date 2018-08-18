@@ -1,6 +1,7 @@
 module Draw
     exposing
         ( a4Landscape
+        , a3Landscape
         , a4Portrait
         , a6
         , circle
@@ -30,6 +31,12 @@ import Svg.Attributes as Attributes
 a6 : List (Svg.Attribute msg) -> List (Svg msg) -> Html msg
 a6 =
     frame 29 21 "mm"
+
+{-| A4 sized container in landscape
+-}
+a3Landscape : List (Svg.Attribute msg) -> List (Svg msg) -> Html msg
+a3Landscape =
+    frame 420 297 "mm"
 
 {-| A4 sized container in landscape
 -}

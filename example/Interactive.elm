@@ -10,7 +10,7 @@ import Svg exposing (Svg)
 import Svg.Attributes exposing (transform)
 import Svg.PathD as PathD exposing (d_)
 import Keyboard
-import Char
+import Debug
 
 
 type alias Model =
@@ -38,6 +38,7 @@ initialState = [ D, R, D, R, D, R, D ]
 initialSavedPatterns =
     [ [ D ]
     , [ D, R, D, R, D, R, D ]
+    , [ D, D, R, D, L, D, R, D, R, D, D ]
     , [ D, R, D, L, D, L, D, R ]
     , [ D, D, D, L, D, L, D, L, D, L, D ]
     , [ D, L, D, R ]
@@ -129,12 +130,25 @@ view model =
                 , button [ onClick <| ResetSvg ] [ text "Reset svg" ]
                 , button [ onClick <| Iterate model.d ] [ text "Iterate" ]
                 ]
-            , a6
-                [ style <| ("border", "1px solid black") :: dib ]
-                [ g
-                    [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
-                    [ draw model.recordedState (Configuration ( 0, 0 ) 0) ]
+            , div
+                [ style
+                    [ ("display", "inline-block")
+                    , ("width", "30%")
+                    , ("height", "150px")
+                    , ("vertical-align", "top")
+                    , ("overflow", "scroll")
+                    , ("border", "1px solid black")
+                    , ("padding", "2px")
+                    ]
                 ]
+                {-- ((++) [ span [] [ text <| "HERE" ++ toString (turtle model.recordedState 90)] ] --}
+                [ a4Landscape
+                    [ style <| ("border", "1px dashed black") :: dib ]
+                    [ g
+                        [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
+                        [ draw model.recordedState (Configuration ( 0, 0 ) 0) ]
+                    ]
+                ]{--)}
             ]
         , div
             [ style <|
@@ -144,7 +158,7 @@ view model =
                 , ("overflow", "scroll")
                 ]
             ]
-            [ a4Landscape
+            [ a3Landscape
                 []
                 [ g
                     [ transform <| Draw.translate 150 100 ++ Draw.scale 1 ]
