@@ -2,7 +2,7 @@ module Example.Interactive exposing (..)
 
 import Draw exposing (..)
 import Html exposing (Html, text, div, button, h1, h3, h4, span, ul, input, p)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (style, type_)
 import Html.Events exposing (onClick, onInput)
 import LSystem
 import LSystem.Turtle exposing (State(..), turtle)
@@ -25,6 +25,8 @@ type alias Model =
     , recordedState: List State
     , recOn: Bool
     , savedPatterns: List (List State)
+    , deg: Float
+    , rdeg: String
     }
 
 type Configuration
@@ -37,6 +39,8 @@ initialState = [ D, R, D, R, D, R, D ]
 
 initialSavedPatterns =
     [ [ D ]
+    , [D,R,D,R,D,R,D,R,D,R,D]
+    , [D,R,D,R,D,R,R,D,R,R,D,D,L,D,L,D,L,L,D,L,D,D]
     , [ D, R, D, R, D, R, D ]
     , [ D, D, R, D, L, D, R, D, R, D, D ]
     , [ D, R, D, L, D, L, D, R ]
@@ -58,7 +62,7 @@ initialSavedPatterns =
 
 initialModel : List State -> Model
 initialModel state =
-    Model state [L] [R] [D] [S] state [state] (List.length state) [] False initialSavedPatterns
+    Model state [L] [R] [D] [S] state [state] (List.length state) [] False initialSavedPatterns 90 "90"
 
 model : Model
 model = initialModel initialState
@@ -88,16 +92,18 @@ type Msg
     | ResetSvg
     | SavePattern
     | SelectPattern (List State)
+    | RegisterDeg String
+    | SetDeg
 
 
 init : ( Model, Cmd Msg )
 init =
     ( initialModel initialState, Cmd.none )
 
-draw : List State -> Configuration -> Svg Msg
-draw pattern (Configuration p0 a0) =
+draw : List State -> Configuration -> Float -> Svg Msg
+draw pattern (Configuration p0 a0) deg =
     Svg.path
-        [ d_ <| [ PathD.M p0 ] ++ turtle pattern 90
+        [ d_ <| [ PathD.M p0 ] ++ (turtle pattern deg)
         , Svg.Attributes.strokeWidth "0.2"
         ]
         []
@@ -129,6 +135,8 @@ view model =
                 , button [ onClick <| SetStep model.recordedState ] [ text "Set step" ]
                 , button [ onClick <| ResetSvg ] [ text "Reset svg" ]
                 , button [ onClick <| Iterate model.d ] [ text "Iterate" ]
+                , input [ type_ "text", onInput RegisterDeg ] []
+                , button [ onClick <| SetDeg ] [ text "Set degrees" ]
                 ]
             , div
                 [ style
@@ -146,9 +154,9 @@ view model =
                     [ style <| ("border", "1px dashed black") :: dib ]
                     [ g
                         [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
-                        [ draw model.recordedState (Configuration ( 0, 0 ) 0) ]
+                        [ draw model.recordedState (Configuration ( 0, 0 ) 0) model.deg ]
                     ]
-                ]{--)}
+                ]--)
             ]
         , div
             [ style <|
@@ -162,7 +170,7 @@ view model =
                 []
                 [ g
                     [ transform <| Draw.translate 150 100 ++ Draw.scale 1 ]
-                    [ draw model.state (Configuration ( 0, 0 ) 0) ]
+                    [ draw model.state (Configuration ( 0, 0 ) 0) model.deg ]
                 ]
             ]
         , div
@@ -175,10 +183,10 @@ view model =
                 , ("overflow-y", "scroll")
                 ]
             ]
-            (List.map viewSavedPattern model.savedPatterns)
+            (List.map (viewSavedPattern model.deg) model.savedPatterns)
         ]
 
-viewSavedPattern pattern =
+viewSavedPattern deg pattern =
     div
         [ style <|
             dib ++
@@ -195,7 +203,7 @@ viewSavedPattern pattern =
             ]
             [ g
                 [ transform <| Draw.translate 15 10 ++ Draw.scale 2 ]
-                [ draw pattern (Configuration (0, 0) 0) ]
+                [ draw pattern (Configuration (0, 0) 0) deg ]
             ]
         , div
             [ style
@@ -241,6 +249,10 @@ update msg model =
             { model | savedPatterns = model.recordedState :: model.savedPatterns } ! []
         SelectPattern pattern ->
             { model | recordedState = pattern } ! []
+        RegisterDeg val ->
+            { model | rdeg = val } ! []
+        SetDeg ->
+            { model | deg = Result.withDefault 90 (String.toFloat model.rdeg) } ! []
 
 stringToState s =
     let
