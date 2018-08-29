@@ -236,7 +236,7 @@ update msg model =
             { model | d = pattern } ! []
         Iterate pattern ->
             let
-                newState = LSystem.apply (rule pattern) model.state
+                newState = apply (rule pattern) model.state
             in
                 { model
                     | state = newState
@@ -303,3 +303,10 @@ main =
         , update = update
         , subscriptions = subscriptions
         }
+
+
+-- TO BE EXTRACTED
+
+apply : (a -> List a) -> List a -> List a
+apply rule states =
+    List.concatMap (\s -> rule s) states
